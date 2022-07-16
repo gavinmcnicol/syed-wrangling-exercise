@@ -1,6 +1,6 @@
 ---
 title: "Great Lakes fishing and stocking - data wrangling"
-author: "Gavin McNicol"
+author: "Sufiyan"
 output: github_document
 ---
 
@@ -40,7 +40,7 @@ You just need to knit the document and view the output.
 A definition of all variables is given in the [Data dictionary] section at the end, though you don't need to familiarize yourself with all variables in order to work through these exercises.
 
 ```{r catch_data-skim}
-skim(catch_data)
+skim("catch_data")
 ```
 
 **Note:** Remember you can also use `glimpse()` to take a look at a dataset.
@@ -59,16 +59,16 @@ Note: production `values` are rounded to the nearest thousand pounds.
 
 Hint: The boolean (logical) operator for "equals to" is `==`.
 
-```{r largest-catches, eval=FALSE}
+```{r largest-catches, eval=TRUE}
 catch_data %>%
   filter(
-    lake ___ "___",
-    region ___ "U.S. Total"
+    lake == "Michigan",
+    region == "U.S. Total"
     ) %>% 
   slice_max(
-    order_by = ___, 
-    n = 5
-      )
+    order_by = values , 
+    n = 5 )
+
 ```
 
 **Tip:** If you are working with a large dataset like `catch_data`, and there are character class variables (e.g., \`region\`\`), you can quickly see what different character strings (regions) are in the dataset by converting the characters to factors (i.e. categorical data), then looking at the levels.
@@ -91,15 +91,15 @@ What were the largest fish catches before 1950?
 
 **Note:** You will need to set `eval=TRUE` when you have an answer you want to try out.
 
-```{r big-fish-catches, eval=FALSE}
+```{r big-fish-catches, eval= TRUE}
 catch_data %>%
-  filter(
-    region ___ "U.S. Total",
-    year ___ 1950
+  filter( 
+    region == "U.S. Total",
+    year <= 1950
     ) %>% 
-  arrange(___) %>% 
-  slice(___) %>% 
-  select(___)
+  arrange(desc(values)) %>% 
+  slice(1:5) %>% 
+  select(year, species, values)
 ```
 
 From here on, we'll continue only using catch data from the "U.S. Total" `region`.
@@ -123,8 +123,14 @@ Use `arrange()` to identify the largest fish catches for those years.
 Simplify your output by using `select()` to select only `year`, `species`, and `values`.
 
 ```{r 1975-comparison}
-# add code here
-# pay attention to correctness and code style
+catch_data_us %>%
+  filter(
+    lake == "Michigan" ,
+    year == 2015|1975) %>%
+  arrange(desc(values)) %>%
+  select(year, species, values)
+  
+  
 ```
 
 Was your intuition correct?
@@ -133,7 +139,17 @@ Although we normally tidy up data by pivoting longer, as a final step, use `pivo
 You will need to specify the "names_from" and "values_from" arguments.
 
 ```{r 1975-comparison-wide}
-# add code here
+
+
+catch_data_us %>% 
+  filter(
+    lake == "Michigan",
+    year == 2015 | year == 1975
+    ) %>% 
+  arrange(desc(values)) %>% 
+  select(year, species, values) %>% 
+  pivot_wider(names_from = "year",
+              values_from = "values")
 ```
 
 ### Exercise 5.
@@ -141,13 +157,16 @@ You will need to specify the "names_from" and "values_from" arguments.
 Use the `distinct()` function to find out how many years there are in the dataset:
 
 ```{r distinct-years}
-# add your code here
+catch_data %>%
+  distinct(year)
 ```
 
 Now pipe the output to `arrange()` to arrange by descending order (from most recent to most distant year):
 
 ```{r distinct-years-arranged}
-# copy and add your code here
+catch_data %>%
+  distinct(year)%>%
+  arrange(desc(year))
 ```
 
 ### Exercise 6.
@@ -155,19 +174,25 @@ Now pipe the output to `arrange()` to arrange by descending order (from most rec
 Use the `count()` function to confirm how many observations (rows) there are *per lake*:
 
 ```{r count-by-lake}
-# add your code here
+catch_data %>%
+  count(sort(lake)) %>%
+  arrange('lake')
+  
+
 ```
 
 Now generate the same table, but this time use the `sort` argument in `count()` to sort in descending order:
 
 ```{r count-by-lake-sort}
-# add your code here
+catch_data %>%
+  count(sort(lake))
 ```
 
 Generate the same output, but this time using the `arrange()` function, rather than `sort` argument in `count()`:
 
 ```{r count-by-lake-arrange}
-# add your code here
+catch_data%>%
+  arrange(lake)
 ```
 
 ### Exercise 7.
@@ -182,9 +207,16 @@ Calculate summary statistics (minimum, mean, median, maximum) for the size of th
 Your label should be short, informative, and shouldn't include spaces.
 It also shouldn't repeat a previous label, otherwise R Markdown will give you an error about repeated R chunk labels.
 
-```{r label-me-1}
-# add code here
-# pay attention to correctness and code style
+```{r summary-statistics}
+catch_data_us %>%
+  filter(lake == "Michigan",
+         species == "Chinook Salmon") %>%
+  summarise(stats = mean(values, na.rm = TRUE),
+            median = median(values, na.rm = TRUE),
+            minimun  = min(values,na.rm =TRUE),
+            maximum = max(values, na.rm = TRUE))
+
+
 ```
 
 ### Exercise 8.
@@ -196,8 +228,16 @@ Use the maximum catch result you got in the last exercise to filter for the `yea
 Remember to label the chunk again.
 
 ```{r label-me-2}
-# add code here
-# pay attention to correctness and code style
+
+  
+catch_data_us %>%
+  filter(lake == "Michigan",
+         species == "Chinook Salmon",
+         values == 57) %>%
+  group_by(year)
+
+
+
 ```
 
 ### Exercise 9.
@@ -210,9 +250,13 @@ Sum the total Lake Michigan catch (including all species) in the years 1975, 198
 -   You can filter using a vector of numbers rather than a single number by using `%in%` where you would normally put the logical operator `==` . For instance, for the three years 1999, 2000, and 2001 you would use: `filter(year %in% c(1999, 2000, 2001))`.
 -   After filtering, you'll need to use `group_by()` to compute the sums by year.
 
-```{r label-me-3}
-# add code here
-# pay attention to correctness and code style
+```{r sums-mussel species- michigan}
+catch_data_us %>%
+  filter(lake == "Michigan",
+         year %in% c(1975,1985,1995,2005,2015)) %>%   group_by(year) %>%
+  summarize(total_fish = sum(values, na.rm = TRUE))
+
+
 ```
 
 What does the trend in the values show?
@@ -225,13 +269,27 @@ It can be a bit confusing to constantly add three zeros mentally to the values c
 Use `mutate()` to create a new column called `annual_catch_lbs` which expressed the catch size in lbs, rather than 1000s of lbs.
 
 ```{r label-me-4}
-# add your code here
+catch_data_us %>%
+  filter(lake == "Michigan",
+         year %in% c(1975,1985,1995,2005,2015)) %>%   group_by(year) %>%
+  summarise(total_fish = sum(values, na.rm = TRUE))%>%
+  mutate(annual_catch_lsb = total_fish)
+
+
 ```
 
 Finally, save the new version of the `catch_data` dataset that includes `annual_catch_lbs` in the code chunk below, using the assignment operator (`<-`) to assign your output to `catch_data_v2`.
 
 ```{r label-me-5}
-# add your code here
+
+catch_data_v2 <- catch_data_us %>%
+  filter(lake == "Michigan",
+         year %in% c(1975,1985,1995,2005,2015)) %>%   group_by(year) %>%
+  summarise(total_fish = sum(values, na.rm = TRUE))%>%
+  mutate(annual_catch_lsb = total_fish)
+
+catch_data_v2
+
 ```
 
 ## Data dictionary
